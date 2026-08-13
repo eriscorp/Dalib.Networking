@@ -107,7 +107,7 @@ public enum ClientOpcode : byte
     /// <summary>0x30 - swap two slots within a panel (inventory/spellbook/skillbook).</summary>
     SwapSlot = 0x30,
 
-    /// <summary>0x31 - confirm a server prompt; carries three state bytes then a length-prefixed payload. 
+    /// <summary>0x31 - confirm a server prompt; carries three state bytes then a length-prefixed payload.</summary>
     Confirm = 0x31,
 
     /// <summary>0x38 - request a refresh of the surrounding area; no body.</summary>

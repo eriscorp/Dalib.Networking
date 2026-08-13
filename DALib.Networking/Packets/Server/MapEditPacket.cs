@@ -13,7 +13,7 @@ namespace DALib.Networking.Packets.Server;
 /// <remarks>
 ///     Modeled for protocol completeness; not emitted by typical servers. Live-patches a rectangular block
 ///     of the current map (a terrain/object edit pushed mid-session). The three <c>u16</c>s per cell match
-///     <see cref="DALib.Data.MapTile" />'s layers.
+///     the layers of DALib's <c>MapTile</c>.
 /// </remarks>
 [ServerOpcode(ServerOpcode.MapEdit)]
 public sealed record MapEditPacket : ServerPacket
@@ -95,7 +95,7 @@ public sealed record MapEditPacket : ServerPacket
 
 /// <summary>
 ///     One tile cell of a <see cref="MapEditPacket" /> - the three map layers (each a big-endian <c>u16</c>
-///     tile id, matching <see cref="DALib.Data.MapTile" />).
+///     tile id, matching DALib's <c>MapTile</c>).
 /// </summary>
 public sealed record MapEditTile
 {
