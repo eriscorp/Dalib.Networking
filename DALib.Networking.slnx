@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="DALib.Networking.Tests/DALib.Networking.Tests.csproj" />
+  <Project Path="DALib.Networking/DALib.Networking.csproj" />
+</Solution>
