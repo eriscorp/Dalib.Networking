@@ -2,7 +2,7 @@ using DALib.Networking.Crypto;
 using DALib.Networking.Packets.Client;
 using DALib.Networking.Wire;
 
-namespace DALib.Tests.Networking.Packets.Client;
+namespace DALib.Networking.Tests.Packets.Client;
 
 /// <summary>
 ///     Coverage for 0x47 StatPoint (C->S) - pins the single stat-selector byte (0x01 Str, 0x02 Dex,

@@ -2,7 +2,7 @@ using DALib.Networking.Crypto;
 using DALib.Networking.Packets.Client;
 using DALib.Networking.Wire;
 
-namespace DALib.Tests.Networking.Packets.Client;
+namespace DALib.Networking.Tests.Packets.Client;
 
 /// <summary>
 ///     Coverage for 0x0C RequestObject (C->S) - pins the 4-byte body (u32 BE object id) and

@@ -2,7 +2,7 @@ using DALib.Networking.Crypto;
 using DALib.Networking.Packets.Server;
 using DALib.Networking.Wire;
 
-namespace DALib.Tests.Networking.Packets.Server;
+namespace DALib.Networking.Tests.Packets.Server;
 
 /// <summary>
 ///     Coverage for 0x4A BadGuy (S->C) - body [u8 Type][u8 Payload][u32 BE Magic]. Modeled for protocol

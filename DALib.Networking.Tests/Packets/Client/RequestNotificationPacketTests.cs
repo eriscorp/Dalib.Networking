@@ -2,7 +2,7 @@ using DALib.Networking.Crypto;
 using DALib.Networking.Packets.Client;
 using DALib.Networking.Wire;
 
-namespace DALib.Tests.Networking.Packets.Client;
+namespace DALib.Networking.Tests.Packets.Client;
 
 /// <summary>
 ///     Coverage for 0x4B RequestNotification (C->S) - a bodyless trigger that asks for the full login

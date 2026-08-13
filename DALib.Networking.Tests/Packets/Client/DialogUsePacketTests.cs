@@ -3,7 +3,7 @@ using DALib.Networking.Crypto;
 using DALib.Networking.Packets.Client;
 using DALib.Networking.Wire;
 
-namespace DALib.Tests.Networking.Packets.Client;
+namespace DALib.Networking.Tests.Packets.Client;
 
 /// <summary>
 ///     Coverage for 0x3A DialogUse (C->S) - the multi-variant dialog response. Pins each form's

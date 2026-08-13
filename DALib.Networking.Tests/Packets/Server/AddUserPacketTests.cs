@@ -2,7 +2,7 @@ using DALib.Networking.Crypto;
 using DALib.Networking.Packets.Server;
 using DALib.Networking.Wire;
 
-namespace DALib.Tests.Networking.Packets.Server;
+namespace DALib.Networking.Tests.Packets.Server;
 
 /// <summary>
 ///     Coverage for 0x44 AddUser (S->C) - a payload-free signal. Modeled for protocol completeness;

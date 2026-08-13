@@ -1,7 +1,7 @@
 using DALib.Networking.Crypto;
 using DALib.Networking.Wire;
 
-namespace DALib.Tests.Networking.Wire;
+namespace DALib.Networking.Tests.Wire;
 
 /// <summary>
 ///     <see cref="PacketSession" /> is a thin pairing of a shared <see cref="PacketCodec" />

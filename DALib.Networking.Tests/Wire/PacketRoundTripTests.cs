@@ -1,6 +1,6 @@
 using DALib.Networking.Wire;
 
-namespace DALib.Tests.Networking.Wire;
+namespace DALib.Networking.Tests.Wire;
 
 /// <summary>
 ///     Verifies that <see cref="PacketWriter" /> output decodes cleanly through

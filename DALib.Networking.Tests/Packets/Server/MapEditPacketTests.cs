@@ -4,7 +4,7 @@ using DALib.Networking.Crypto;
 using DALib.Networking.Packets.Server;
 using DALib.Networking.Wire;
 
-namespace DALib.Tests.Networking.Packets.Server;
+namespace DALib.Networking.Tests.Packets.Server;
 
 /// <summary>
 ///     Coverage for 0x06 MapEdit (S->C). Body is [u8 StartX][u8 StartY][u8 Width][u8 Height] then

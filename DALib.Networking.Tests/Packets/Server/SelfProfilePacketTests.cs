@@ -2,7 +2,7 @@ using DALib.Networking.Crypto;
 using DALib.Networking.Packets.Server;
 using DALib.Networking.Wire;
 
-namespace DALib.Tests.Networking.Packets.Server;
+namespace DALib.Networking.Tests.Packets.Server;
 
 public class SelfProfilePacketTests
 {

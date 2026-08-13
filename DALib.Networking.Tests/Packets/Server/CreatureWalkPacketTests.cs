@@ -3,7 +3,7 @@ using DALib.Networking.Crypto;
 using DALib.Networking.Packets.Server;
 using DALib.Networking.Wire;
 
-namespace DALib.Tests.Networking.Packets.Server;
+namespace DALib.Networking.Tests.Packets.Server;
 
 /// <summary>
 ///     Coverage for 0x0C CreatureWalk (S->C) - pins the <c>[u32 BE sourceId][u16 oldX][u16 oldY][u8

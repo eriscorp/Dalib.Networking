@@ -1,6 +1,6 @@
 using DALib.Networking.Crypto;
 
-namespace DALib.Tests.Networking.Crypto;
+namespace DALib.Networking.Tests.Crypto;
 
 /// <summary>
 ///     Tests for <see cref="DialogObfuscation" />:

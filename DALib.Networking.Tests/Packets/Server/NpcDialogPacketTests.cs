@@ -1,7 +1,7 @@
 using System;
 using DALib.Networking.Packets.Server;
 
-namespace DALib.Tests.Networking.Packets.Server;
+namespace DALib.Networking.Tests.Packets.Server;
 
 public class NpcDialogPacketTests
 {

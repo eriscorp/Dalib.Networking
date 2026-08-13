@@ -1,6 +1,6 @@
 using DALib.Networking.Wire;
 
-namespace DALib.Tests.Networking.Wire;
+namespace DALib.Networking.Tests.Wire;
 
 // Stub packets used by codec tests. They live in the test assembly so the default
 // PacketCodec / PacketCodec (which only scans the DALib assembly) does not pick

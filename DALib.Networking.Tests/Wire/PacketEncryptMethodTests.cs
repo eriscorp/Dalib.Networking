@@ -1,7 +1,7 @@
 using DALib.Networking.Crypto;
 using DALib.Networking.Wire;
 
-namespace DALib.Tests.Networking.Wire;
+namespace DALib.Networking.Tests.Wire;
 
 public class PacketEncryptMethodTests
 {

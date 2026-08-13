@@ -4,7 +4,7 @@ using DALib.Networking.Packets.Client;
 using DALib.Networking.Packets.Server;
 using DALib.Networking.Wire;
 
-namespace DALib.Tests.Networking.Packets.Client;
+namespace DALib.Networking.Tests.Packets.Client;
 
 /// <summary>
 ///     Coverage for 0x10 ClientJoin (C->S) - verifies the wire layout, the round-trip, and

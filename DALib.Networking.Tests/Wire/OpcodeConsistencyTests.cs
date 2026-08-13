@@ -3,7 +3,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using DALib.Networking.Wire;
 
-namespace DALib.Tests.Networking.Wire;
+namespace DALib.Networking.Tests.Wire;
 
 /// <summary>
 ///     Guards the one footgun in declaring an opcode twice per packet (the dispatch attribute
