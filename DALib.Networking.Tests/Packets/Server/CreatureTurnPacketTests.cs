@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// (C) 2026 ERISCO, LLC. See LICENSE and CONTRIBUTORS.md.
+
 using DALib.Enums;
 using DALib.Networking.Crypto;
 using DALib.Networking.Packets.Server;
