@@ -24,7 +24,7 @@ public class PlayerShopActionPacketTests
     // ---- layout pins --------------------------------------------------------------------------
 
     // Every vector below is a frame captured from a retail 7.41 client on 2026-08-14, driven by a pushed
-    // S->C 0x4F (Oghma HTOO-422). They are bytes the client actually emitted, not a restatement of what
+    // S->C 0x4F (Oghma HTOO-423). They are bytes the client actually emitted, not a restatement of what
     // this library writes - which is the point, since the library's action mapping was wrong until then.
 
     [Fact]
