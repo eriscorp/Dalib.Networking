@@ -23,47 +23,75 @@ public class PlayerShopActionPacketTests
 
     // ---- layout pins --------------------------------------------------------------------------
 
+    // Every vector below is a frame captured from a retail 7.41 client on 2026-08-14, driven by a pushed
+    // S->C 0x4F (Oghma HTOO-422). They are bytes the client actually emitted, not a restatement of what
+    // this library writes - which is the point, since the library's action mapping was wrong until then.
+
     [Fact]
-    public void WithdrawGold_WriteBody_PinsLayout()
+    public void AddItem_WriteBody_MatchesLiveCapture()
     {
-        // [01 gate][u32 ShopId][00 action][u8 Selector][u32 Amount] - ShopId 0x0A0B0C0D, Amount 1000 = 0x3E8
-        new WithdrawShopGoldPacket { ShopId = 0x0A0B0C0D, Selector = 0x07, Amount = 1000 }
+        // Dragging the item in inventory slot 3 into the shop window: 0100000001000300000001
+        new AddShopItemPacket { ShopId = 1, InventorySlot = 3, Quantity = 1 }
             .ToBody().Should().Equal(
-                0x01, 0x0A, 0x0B, 0x0C, 0x0D, 0x00, 0x07, 0x00, 0x00, 0x03, 0xE8);
+                0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x03, 0x00, 0x00, 0x00, 0x01);
     }
 
     [Fact]
-    public void AddItem_WriteBody_PinsLayout_WithZeroReservedTail()
+    public void AddItem_LeadingByteIsTheInventorySlot()
     {
-        // [01 gate][u32 ShopId][01 action][u32 Operand1][u32 Operand2][u16 0][u16 0]
-        new AddShopItemPacket { ShopId = 1, Operand1 = 2, Operand2 = 3 }
+        // Slots 1/2/3 walked the leading tail byte 1/2/3 with the quantity fixed at 1, which is what
+        // identifies it as the inventory slot rather than a selector or a destination.
+        foreach (var slot in (byte[]) [1, 2, 3])
+            new AddShopItemPacket { ShopId = 1, InventorySlot = slot, Quantity = 1 }
+                .ToBody().Should().Equal(
+                    0x01, 0x00, 0x00, 0x00, 0x01, 0x00, slot, 0x00, 0x00, 0x00, 0x01);
+    }
+
+    [Fact]
+    public void Withdraw_WriteBody_MatchesLiveCapture()
+    {
+        // Lock icon -> "take back" 1337 gold: 010000000101000000000000053900000000
+        // ListingId 0 addresses the gold till; 1337 = 0x539.
+        new WithdrawFromShopPacket { ShopId = 1, ListingId = 0, Amount = 1337 }
             .ToBody().Should().Equal(
                 0x01, 0x00, 0x00, 0x00, 0x01, 0x01,
-                0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00);
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x05, 0x39, 0x00, 0x00, 0x00, 0x00);
     }
 
     [Fact]
-    public void UpdateListing_WriteBody_PinsLayout()
+    public void UpdateListing_WriteBody_MatchesLiveCapture()
     {
-        // [01 gate][u32 ShopId][02 action][u32 ListingId][u32 Price][u32 Count]
-        new UpdateShopListingPacket { ShopId = 1, ListingId = 42, Price = 1000, Count = 5 }
+        // Sell = 1337 confirmed on listing 1: 010000000102000000010000053900000001
+        new UpdateShopListingPacket { ShopId = 1, ListingId = 1, Price = 1337, Count = 1 }
             .ToBody().Should().Equal(
                 0x01, 0x00, 0x00, 0x00, 0x01, 0x02,
-                0x00, 0x00, 0x00, 0x2A, 0x00, 0x00, 0x03, 0xE8, 0x00, 0x00, 0x00, 0x05);
+                0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x05, 0x39, 0x00, 0x00, 0x00, 0x01);
     }
 
     [Fact]
-    public void RemoveListing_WriteBody_PinsLayout()
+    public void UpdateListing_MiddleFieldIsThePrice()
     {
-        // [01 gate][u32 ShopId][03 action][u32 ListingId]
-        new RemoveShopListingPacket { ShopId = 1, ListingId = 42 }
-            .ToBody().Should().Equal(0x01, 0x00, 0x00, 0x00, 0x01, 0x03, 0x00, 0x00, 0x00, 0x2A);
+        // The Sell field moved the middle u32 (100 -> 1337) while the third stayed at the quantity of 1.
+        // That ordering is price-then-count, which was an open question before the capture.
+        new UpdateShopListingPacket { ShopId = 1, ListingId = 1, Price = 100, Count = 1 }
+            .ToBody().Should().Equal(
+                0x01, 0x00, 0x00, 0x00, 0x01, 0x02,
+                0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00, 0x01);
     }
 
     [Fact]
-    public void CloseShop_WriteBody_IsPrefixOnly()
+    public void RemoveListing_WriteBody_MatchesLiveCapture()
     {
-        new CloseShopPacket { ShopId = 1 }
+        // CLR on listing 1: 01000000010300000001
+        new RemoveShopListingPacket { ShopId = 1, ListingId = 1 }
+            .ToBody().Should().Equal(0x01, 0x00, 0x00, 0x00, 0x01, 0x03, 0x00, 0x00, 0x00, 0x01);
+    }
+
+    [Fact]
+    public void Dismiss_WriteBody_MatchesLiveCapture()
+    {
+        // The Dismiss button: 010000000104. The OK button closes the window and sends nothing.
+        new DismissShopPacket { ShopId = 1 }
             .ToBody().Should().Equal(0x01, 0x00, 0x00, 0x00, 0x01, 0x04);
     }
 
@@ -77,27 +105,29 @@ public class PlayerShopActionPacketTests
     // ---- action dispatch ----------------------------------------------------------------------
 
     [Fact]
-    public void Parse_Action0_IsWithdrawGold()
+    public void Parse_Action0_IsAddItem()
     {
+        // The captured add-item frame, parsed back.
         var parsed = PlayerShopActionPacket
-            .Parse([0x01, 0x0A, 0x0B, 0x0C, 0x0D, 0x00, 0x07, 0x00, 0x00, 0x03, 0xE8])
-            .Should().BeOfType<WithdrawShopGoldPacket>().Subject;
+            .Parse([0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x03, 0x00, 0x00, 0x00, 0x01])
+            .Should().BeOfType<AddShopItemPacket>().Subject;
 
-        parsed.ShopId.Should().Be(0x0A0B0C0Du);
-        parsed.Selector.Should().Be((byte)0x07);
-        parsed.Amount.Should().Be(1000u);
+        parsed.ShopId.Should().Be(1u);
+        parsed.InventorySlot.Should().Be((byte)3);
+        parsed.Quantity.Should().Be(1u);
     }
 
     [Fact]
-    public void Parse_Action1_IsAddItem()
+    public void Parse_Action1_IsWithdraw()
     {
+        // The captured gold-withdrawal frame, parsed back.
         var parsed = PlayerShopActionPacket
             .Parse([0x01, 0x00, 0x00, 0x00, 0x01, 0x01,
-                0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00])
-            .Should().BeOfType<AddShopItemPacket>().Subject;
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x05, 0x39, 0x00, 0x00, 0x00, 0x00])
+            .Should().BeOfType<WithdrawFromShopPacket>().Subject;
 
-        parsed.Operand1.Should().Be(2u);
-        parsed.Operand2.Should().Be(3u);
+        parsed.ListingId.Should().Be(0u);
+        parsed.Amount.Should().Be(1337u);
         parsed.Reserved1.Should().Be((ushort)0);
         parsed.Reserved2.Should().Be((ushort)0);
     }
@@ -160,11 +190,11 @@ public class PlayerShopActionPacketTests
 
     public static TheoryData<PlayerShopActionPacket> RoundTripCases() =>
     [
-        new WithdrawShopGoldPacket { ShopId = 0x0A0B0C0D, Selector = 0x07, Amount = 50_000 },
-        new AddShopItemPacket { ShopId = 42, Operand1 = 7, Operand2 = 900, Reserved1 = 0, Reserved2 = 0 },
+        new AddShopItemPacket { ShopId = 0x0A0B0C0D, InventorySlot = 7, Quantity = 50_000 },
+        new WithdrawFromShopPacket { ShopId = 42, ListingId = 7, Amount = 900, Reserved1 = 0, Reserved2 = 0 },
         new UpdateShopListingPacket { ShopId = 42, ListingId = 3, Price = 1_000_000, Count = 250 },
         new RemoveShopListingPacket { ShopId = 42, ListingId = 3 },
-        new CloseShopPacket { ShopId = 42 },
+        new DismissShopPacket { ShopId = 42 },
         new ShopOpenedPacket { ShopId = 42 },
     ];
 }
