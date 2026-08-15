@@ -13,9 +13,10 @@ namespace DALib.Networking.Packets.Client;
 ///     server pushes the shop's state with 0x4F, and the client drives it with 0x54. The body opens with a
 ///     shared prefix <c>[u8 0x01 gate][u32 BE ShopId][u8 action]</c>; the action byte (a
 ///     <see cref="PlayerShopActionType" />) selects the form and any tail. The concrete forms are the sealed
-///     records deriving from this base (<see cref="WithdrawShopGoldPacket" />, <see cref="AddShopItemPacket" />,
-///     <see cref="UpdateShopListingPacket" />, <see cref="RemoveShopListingPacket" />,
-///     <see cref="CloseShopPacket" />, <see cref="ShopOpenedPacket" />).
+///     records deriving from this base (<see cref="AddShopItemPacket" />,
+///     <see cref="WithdrawFromShopPacket" />, <see cref="UpdateShopListingPacket" />,
+///     <see cref="RemoveShopListingPacket" />, <see cref="DismissShopPacket" />,
+///     <see cref="ShopOpenedPacket" />).
 /// </summary>
 /// <remarks>
 ///     <para>
@@ -26,9 +27,13 @@ namespace DALib.Networking.Packets.Client;
 ///     <para>
 ///         No reference server parses 0x54 today (Hybrasyl has no handler), so every form here is modeled for
 ///         wire completeness. The wire <em>structure</em> of each form is binary-verified in both the 7.41 and
-///         5.51 retail clients, where the layouts are byte-for-byte identical; the field <em>semantics</em>
-///         are inferred from the client's builder call sites and the traced 0x4F consumer, and the fields that
-///         are not pinned to the binary say so.
+///         5.51 retail clients, where the layouts are byte-for-byte identical.
+///     </para>
+///     <para>
+///         The field <em>semantics</em> were inferred until 2026-08-14, when every action byte was observed
+///         with a known trigger by driving a live retail 7.41 client from a pushed 0x4F. That capture
+///         corrected the action mapping - <c>0</c> and <c>1</c> had been assigned the wrong way round - and
+///         settled action 2's trailing pair as price-then-count. Fields still unpinned say so individually.
 ///     </para>
 /// </remarks>
 [ClientOpcode(ClientOpcode.PlayerShopAction)]
@@ -74,13 +79,13 @@ public abstract record PlayerShopActionPacket : ClientPacket
 
         return action switch
         {
-            PlayerShopActionType.WithdrawGold => new WithdrawShopGoldPacket
-                { ShopId = shopId, Selector = reader.ReadByte(), Amount = reader.ReadUInt32() },
             PlayerShopActionType.AddItem => new AddShopItemPacket
+                { ShopId = shopId, InventorySlot = reader.ReadByte(), Quantity = reader.ReadUInt32() },
+            PlayerShopActionType.Withdraw => new WithdrawFromShopPacket
             {
                 ShopId = shopId,
-                Operand1 = reader.ReadUInt32(),
-                Operand2 = reader.ReadUInt32(),
+                ListingId = reader.ReadUInt32(),
+                Amount = reader.ReadUInt32(),
                 Reserved1 = reader.ReadUInt16(),
                 Reserved2 = reader.ReadUInt16()
             },
@@ -93,7 +98,7 @@ public abstract record PlayerShopActionPacket : ClientPacket
             },
             PlayerShopActionType.RemoveListing => new RemoveShopListingPacket
                 { ShopId = shopId, ListingId = reader.ReadUInt32() },
-            PlayerShopActionType.CloseShop => new CloseShopPacket { ShopId = shopId },
+            PlayerShopActionType.Dismiss => new DismissShopPacket { ShopId = shopId },
             PlayerShopActionType.ShopOpened => new ShopOpenedPacket { ShopId = shopId },
             _ => throw new InvalidDataException(
                 $"0x54 PlayerShopAction: unknown action 0x{(byte)action:X2}.")
@@ -102,54 +107,22 @@ public abstract record PlayerShopActionPacket : ClientPacket
 }
 
 /// <summary>
-///     0x54 action 0 - withdraw gold from the shop's till. Tail <c>[u8 Selector][u32 BE Amount]</c>.
-/// </summary>
-public sealed record WithdrawShopGoldPacket : PlayerShopActionPacket
-{
-    /// <summary>
-    ///     A leading selector byte the client sources from the low byte of a UI value. Its exact role is not
-    ///     pinned to the binary; preserved for round-tripping.
-    /// </summary>
-    public byte Selector { get; init; }
-
-    /// <summary>The amount of gold to withdraw (inferred - the withdraw dialog's <c>u32</c> operand).</summary>
-    public required uint Amount { get; init; }
-
-    /// <inheritdoc />
-    public override PlayerShopActionType ShopActionType => PlayerShopActionType.WithdrawGold;
-
-    /// <inheritdoc />
-    public override void WriteBody(IPacketWriter writer)
-    {
-        WritePrefix(writer);
-        writer.WriteByte(Selector);
-        writer.WriteUInt32(Amount);
-    }
-}
-
-/// <summary>
-///     0x54 action 1 - add an item to the shop. Tail
-///     <c>[u32 BE Operand1][u32 BE Operand2][u16 BE 0][u16 BE 0]</c>.
+///     0x54 action 0 - add an item to the shop, dragged in from an inventory slot. Tail
+///     <c>[u8 InventorySlot][u32 BE Quantity]</c>.
 /// </summary>
 /// <remarks>
-///     The two u32 operands carry the added item's reference and terms (an item/slot reference and a
-///     price/quantity, in some order); their exact roles are not pinned to the binary. The two trailing u16s
-///     are always sent as <c>0</c> by the client - modeled as settable <see cref="Reserved1" /> /
-///     <see cref="Reserved2" /> so a non-zero value round-trips.
+///     Live-captured against the retail 7.41 client on 2026-08-14: dragging from inventory slots 1, 2 and 3
+///     walked <see cref="InventorySlot" /> 1/2/3 while <see cref="Quantity" /> stayed at 1. The destination
+///     shop slot never reaches the wire - the server decides where the listing lands. The tail is five
+///     bytes; there is no trailing zero byte.
 /// </remarks>
 public sealed record AddShopItemPacket : PlayerShopActionPacket
 {
-    /// <summary>First add-item operand (an item/slot reference or its terms; exact role not pinned).</summary>
-    public required uint Operand1 { get; init; }
+    /// <summary>The inventory slot the item was dragged from.</summary>
+    public required byte InventorySlot { get; init; }
 
-    /// <summary>Second add-item operand (an item/slot reference or its terms; exact role not pinned).</summary>
-    public required uint Operand2 { get; init; }
-
-    /// <summary>A trailing u16 the client always sends as 0. Preserved for round-tripping.</summary>
-    public ushort Reserved1 { get; init; }
-
-    /// <summary>A trailing u16 the client always sends as 0. Preserved for round-tripping.</summary>
-    public ushort Reserved2 { get; init; }
+    /// <summary>How many of the stack to list.</summary>
+    public required uint Quantity { get; init; }
 
     /// <inheritdoc />
     public override PlayerShopActionType ShopActionType => PlayerShopActionType.AddItem;
@@ -158,8 +131,47 @@ public sealed record AddShopItemPacket : PlayerShopActionPacket
     public override void WriteBody(IPacketWriter writer)
     {
         WritePrefix(writer);
-        writer.WriteUInt32(Operand1);
-        writer.WriteUInt32(Operand2);
+        writer.WriteByte(InventorySlot);
+        writer.WriteUInt32(Quantity);
+    }
+}
+
+/// <summary>
+///     0x54 action 1 - withdraw from the shop. Tail
+///     <c>[u32 BE ListingId][u32 BE Amount][u16 BE 0][u16 BE 0]</c>.
+/// </summary>
+/// <remarks>
+///     Live-captured 2026-08-14 through the lock icon beside the shop's gold, which opens a "how much money
+///     do you wish to take back" prompt: entering 1337 produced
+///     <c>[00000000][00000539][00000000]</c>. So <see cref="ListingId" /> <c>0</c> addresses the gold till
+///     and <see cref="Amount" /> is the sum taken. No UI route to a non-zero listing id is known, so the
+///     item-withdrawal form is unobserved. The trailing four bytes were zero in every capture; they are
+///     modeled as two u16s after the binary, but a single <c>u32</c> fits the observations equally well and
+///     nothing seen so far distinguishes them.
+/// </remarks>
+public sealed record WithdrawFromShopPacket : PlayerShopActionPacket
+{
+    /// <summary>The listing to withdraw from; <c>0</c> addresses the shop's gold till.</summary>
+    public required uint ListingId { get; init; }
+
+    /// <summary>The amount to withdraw.</summary>
+    public required uint Amount { get; init; }
+
+    /// <summary>A trailing u16 the client always sends as 0. Preserved for round-tripping.</summary>
+    public ushort Reserved1 { get; init; }
+
+    /// <summary>A trailing u16 the client always sends as 0. Preserved for round-tripping.</summary>
+    public ushort Reserved2 { get; init; }
+
+    /// <inheritdoc />
+    public override PlayerShopActionType ShopActionType => PlayerShopActionType.Withdraw;
+
+    /// <inheritdoc />
+    public override void WriteBody(IPacketWriter writer)
+    {
+        WritePrefix(writer);
+        writer.WriteUInt32(ListingId);
+        writer.WriteUInt32(Amount);
         writer.WriteUInt16(Reserved1);
         writer.WriteUInt16(Reserved2);
     }
@@ -214,12 +226,17 @@ public sealed record RemoveShopListingPacket : PlayerShopActionPacket
 }
 
 /// <summary>
-///     0x54 action 4 - close the shop window (the Dismiss button). Prefix only.
+///     0x54 action 4 - the Dismiss button. Prefix only.
 /// </summary>
-public sealed record CloseShopPacket : PlayerShopActionPacket
+/// <remarks>
+///     Not a window close. The shop window's OK button dismisses it without putting anything on the wire,
+///     so this packet is the affirmative Dismiss action rather than the act of closing (live-captured
+///     2026-08-14).
+/// </remarks>
+public sealed record DismissShopPacket : PlayerShopActionPacket
 {
     /// <inheritdoc />
-    public override PlayerShopActionType ShopActionType => PlayerShopActionType.CloseShop;
+    public override PlayerShopActionType ShopActionType => PlayerShopActionType.Dismiss;
 
     /// <inheritdoc />
     public override void WriteBody(IPacketWriter writer) => WritePrefix(writer);
